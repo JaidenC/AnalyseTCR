@@ -73,6 +73,8 @@ navbarPage(
 # Define server logic to read selected file ----
 server <- function(input, output) {
 
+  options(shiny.maxRequestSize=30*1024^2) 
+  
   output$contents <- renderTable({
 
     # input$file1 will be NULL initially. After the user selects
