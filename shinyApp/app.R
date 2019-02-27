@@ -1,4 +1,5 @@
 library(shiny)
+library(DT)
 
 # Define UI for data upload app ----
 ui <- fluidPage(
@@ -6,8 +7,8 @@ ui <- fluidPage(
   # App title ----
 navbarPage(
       # theme = "cerulean",  # <--- To use a theme, uncomment this
-      "shinyApp",
-      tabPanel("Navbar 1",
+      "AnalyseTCR",
+      tabPanel("Upload",
 
           # Sidebar layout with input and output definitions ----
           sidebarLayout(
@@ -33,14 +34,14 @@ navbarPage(
                            choices = c(Comma = ",",
                                        Semicolon = ";",
                                        Tab = "\t"),
-                           selected = ","),
+                           selected = "\t"),
 
               # Input: Select quotes ----
               radioButtons("quote", "Quote",
                            choices = c(None = "",
                                        "Double Quote" = '"',
                                        "Single Quote" = "'"),
-                           selected = '"'),
+                           selected = ""),
 
               # Horizontal line ----
               tags$hr(),
@@ -65,7 +66,28 @@ navbarPage(
           )
         ),
       
-      tabPanel("Navbar 2", "This panel is intentionally left blank"),
+      tabPanel("Shared Clonotype Table",
+               
+               # Sidebar layout with input and output definitions ----
+               sidebarLayout(
+                 
+                 # Sidebar panel for inputs ----
+                 sidebarPanel(
+                   
+                   # Select variables to display ----
+                   uiOutput("checkbox") 
+                   
+                 ),
+                 
+                 # Main panel for displaying outputs ----
+                 mainPanel(
+                   
+                   # Output: Data file ----
+                   tableOutput("select_table")
+                 
+                 )
+                )   
+              ),
       tabPanel("Navbar 3", "This panel is intentionally left blank")
   )
 )
@@ -95,6 +117,23 @@ server <- function(input, output) {
       return(df)
     }
 
+  })
+  
+  
+  # Dynamically generate UI input when data is uploaded ----
+  output$checkbox <- renderUI({
+    checkboxGroupInput(inputId = "select_var", 
+                       label = "Input Files:", 
+                       choiceNames = input$file1$name,
+                       choiceValues = input$file1$datapath)
+  })
+  
+  output$select_table <- renderTable({
+    
+    dframe <- read.csv(input$select_var)
+    
+    return(dframe)
+    
   })
 
 }
