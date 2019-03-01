@@ -1,4 +1,6 @@
 library(shiny)
+library(DT)
+library(tcR)
 
 # Define UI for data upload app ----
 ui <- fluidPage(
@@ -6,8 +8,8 @@ ui <- fluidPage(
   # App title ----
 navbarPage(
       # theme = "cerulean",  # <--- To use a theme, uncomment this
-      "shinyApp",
-      tabPanel("Navbar 1",
+      "AnalyseTCR",
+      tabPanel("Upload",
 
           # Sidebar layout with input and output definitions ----
           sidebarLayout(
@@ -16,7 +18,7 @@ navbarPage(
             sidebarPanel(
 
               # Input: Select a file ----
-              fileInput("file1", "Choose CSV File",
+              fileInput("file1", "Choose Mixcr File",
                         multiple = TRUE,
                         accept = c("text/csv",
                                  "text/comma-separated-values,text/plain",
@@ -33,14 +35,14 @@ navbarPage(
                            choices = c(Comma = ",",
                                        Semicolon = ";",
                                        Tab = "\t"),
-                           selected = ","),
+                           selected = "\t"),
 
               # Input: Select quotes ----
               radioButtons("quote", "Quote",
                            choices = c(None = "",
                                        "Double Quote" = '"',
                                        "Single Quote" = "'"),
-                           selected = '"'),
+                           selected = ""),
 
               # Horizontal line ----
               tags$hr(),
@@ -49,10 +51,7 @@ navbarPage(
               radioButtons("disp", "Display",
                            choices = c(Head = "head",
                                        All = "all"),
-                           selected = "head"),
-
-              tags$hr(),
-              actionButton("action", "Upload", class = "btn-primary")
+                           selected = "head")
             
             ),
 
@@ -65,7 +64,31 @@ navbarPage(
           )
         ),
       
-      tabPanel("Navbar 2", "This panel is intentionally left blank"),
+      tabPanel("Shared Clonotype Table",
+               
+               # Sidebar layout with input and output definitions ----
+               sidebarLayout(
+                 
+                 # Sidebar panel for inputs ----
+                 sidebarPanel(
+                   
+                   # Select variables to display ----
+                   uiOutput("checkbox"), 
+                   
+                   tags$hr(),
+                   actionButton("action1", "Create CSV", class = "btn-primary")
+                   
+                 ),
+                 
+                 # Main panel for displaying outputs ----
+                 mainPanel(
+                   
+                   # Output: Data file ----
+                   tableOutput("select_table")
+                 
+                 )
+                )   
+              ),
       tabPanel("Navbar 3", "This panel is intentionally left blank")
   )
 )
@@ -73,6 +96,8 @@ navbarPage(
 # Define server logic to read selected file ----
 server <- function(input, output) {
 
+  options(shiny.maxRequestSize=30*1024^2) 
+  
   output$contents <- renderTable({
 
     # input$file1 will be NULL initially. After the user selects
@@ -93,6 +118,31 @@ server <- function(input, output) {
       return(df)
     }
 
+  })
+  
+  
+  # Dynamically generate UI input when data is uploaded ----
+  output$checkbox <- renderUI({
+    checkboxGroupInput(inputId = "select_var", 
+                       label = "Input Files:", 
+                       choiceNames = input$file1$name,
+                       choiceValues = input$file1$datapath)
+  })
+  
+  output$select_table <- renderTable({
+    
+    dframe <- read.csv(input$select_var)
+    
+    return(dframe)
+    
+  })
+  
+  observeEvent(input$action1, {
+    samples <- read.csv(input$select_var)
+    
+    imm.shared <- shared.repertoire(.data = samples, .type = 'n0rc', .min.ppl = 1, .verbose = F)
+    fileI = paste(input$select_var, "/immShared_Buga_CD4.csv", sep="")
+    write.csv(imm.shared, file = fileI)
   })
 
 }
