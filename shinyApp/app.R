@@ -141,7 +141,7 @@ server <- function(input, output) {
     samples <- read.csv(input$select_var)
     
     imm.shared <- shared.repertoire(.data = samples, .type = 'n0rc', .min.ppl = 1, .verbose = F)
-    fileI = paste(input$select_var, "/immShared_Buga_CD4.csv", sep="")
+    fileI = paste(getwd(), "/immShared_Buga_CD4.csv", sep="")
     write.csv(imm.shared, file = fileI)
   })
 
