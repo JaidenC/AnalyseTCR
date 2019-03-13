@@ -75,12 +75,12 @@ ui <- fluidPage(
                  
                  # Select variables to display ----
                  uiOutput("checkbox"), 
-                 
-                 div(HTML("<b>Receptor data folder:</b>"), style = "margin-bottom: 5px;"),
+               
+                 tags$hr(),
+                 div(HTML("<b>Choose Output Directory:</b>"), style = "margin-bottom: 5px;"),
                  shinyDirButton('resultsLocation', 'Browse...', title = 'Select a directory'),
                  br(),
                  htmlOutput('receptorDirectory'),
-                 br(),
 
                  tags$hr(),
                  actionButton("action1", "Create CSV", class = "btn-primary")
@@ -101,9 +101,13 @@ ui <- fluidPage(
 )
 
 # Define server logic to read selected file ----
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   options(shiny.maxRequestSize=30*1024^2) 
+
+  dataUpload = reactiveValues(
+    receptor_folder = NULL
+  )
   
   output$contents <- renderTable({
     
@@ -158,21 +162,23 @@ server <- function(input, output) {
   })
   
   observeEvent(input$action1, {
+    print(dataUpload$receptor_folder)
+    dir.create(file.path(dataUpload$receptor_folder, "newFile"), recursive = FALSE)
 
-    emptyData1 = data.frame(matrix(ncol=0,nrow=0))
-    emptyData2 = data.frame(matrix(ncol=0,nrow=0))
-    samples <- list(emptyData1, emptyData2)
+    #emptyData1 = data.frame(matrix(ncol=0,nrow=0))
+    #emptyData2 = data.frame(matrix(ncol=0,nrow=0))
+    #samples <- list(emptyData1, emptyData2)
    
-    for (i in 1:length(input$select_var)) {
-      parsedFile <- parse.file(input$select_var[i], 'mixcr')
-      samples[[i]] <- parsedFile
+    #for (i in 1:length(input$select_var)) {
+      #parsedFile <- parse.file(input$select_var[i], 'mixcr')
+      #samples[[i]] <- parsedFile
       #append(samples, parsedFile)
       #samples <- c(samples, parsedFile)
-    }
+    #}
     
     #directory <- "/media/bhug/Emporium/bhug/Shiny/TestCase"
     #samples <- parse.folder(directory, 'mixcr')
-    imm.shared <- shared.repertoire(.data = samples, .type = 'n0rc', .min.ppl = 1, .verbose = F)
+    #imm.shared <- shared.repertoire(.data = samples, .type = 'n0rc', .min.ppl = 1, .verbose = F)
     #fileI = paste(directory, "/immShared_Buga_CD4.csv", sep="")
     #write.csv(imm.shared, file = fileI)
   })
