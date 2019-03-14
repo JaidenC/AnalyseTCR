@@ -162,7 +162,6 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$action1, {
-    print(dataUpload$receptor_folder)
     dir.create(file.path(dataUpload$receptor_folder, "tempFile"), recursive = FALSE)
 
     #change working directory to the tempFile 
@@ -173,7 +172,12 @@ server <- function(input, output, session) {
 
     print(input$select_var)
     
-    write.csv(input$select_var, file = "test.txt")
+    for (i in 1:length(input$select_var)) {
+      is.recursive(input)
+      parsedFile <- parseFilePaths(roots=volumes, input$select_var[i])
+      #print(parsedFile)
+      write.csv(parsedFile, file = input$select_var[i])
+    }
     
     #emptyData1 = data.frame(matrix(ncol=0,nrow=0))
     #emptyData2 = data.frame(matrix(ncol=0,nrow=0))
