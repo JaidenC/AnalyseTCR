@@ -163,8 +163,18 @@ server <- function(input, output, session) {
   
   observeEvent(input$action1, {
     print(dataUpload$receptor_folder)
-    dir.create(file.path(dataUpload$receptor_folder, "newFile"), recursive = FALSE)
+    dir.create(file.path(dataUpload$receptor_folder, "tempFile"), recursive = FALSE)
 
+    #change working directory to the tempFile 
+    changeDir <- dataUpload$receptor_folder
+    newDir = paste(changeDir, "/tempFile", sep="")
+    makeNewDir <- newDir
+    setwd(makeNewDir)
+
+    print(input$select_var)
+    
+    write.csv(input$select_var, file = "test.txt")
+    
     #emptyData1 = data.frame(matrix(ncol=0,nrow=0))
     #emptyData2 = data.frame(matrix(ncol=0,nrow=0))
     #samples <- list(emptyData1, emptyData2)
