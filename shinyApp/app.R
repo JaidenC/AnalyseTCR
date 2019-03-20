@@ -172,29 +172,20 @@ server <- function(input, output, session) {
 
     print(input$select_var)
     
-    for (i in 1:length(input$select_var)) {
-      is.recursive(input)
-      parsedFile <- parseFilePaths(roots=volumes, input$select_var[i])
-      #print(parsedFile)
-      write.csv(parsedFile, file = input$select_var[i])
-    }
-    
-    #emptyData1 = data.frame(matrix(ncol=0,nrow=0))
-    #emptyData2 = data.frame(matrix(ncol=0,nrow=0))
-    #samples <- list(emptyData1, emptyData2)
-   
-    #for (i in 1:length(input$select_var)) {
-      #parsedFile <- parse.file(input$select_var[i], 'mixcr')
-      #samples[[i]] <- parsedFile
-      #append(samples, parsedFile)
-      #samples <- c(samples, parsedFile)
-    #}
-    
-    #directory <- "/media/bhug/Emporium/bhug/Shiny/TestCase"
-    #samples <- parse.folder(directory, 'mixcr')
-    #imm.shared <- shared.repertoire(.data = samples, .type = 'n0rc', .min.ppl = 1, .verbose = F)
-    #fileI = paste(directory, "/immShared_Buga_CD4.csv", sep="")
-    #write.csv(imm.shared, file = fileI)
+    file.copy(from = input$select_var, to = getwd(), overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
+  
+    directory <- getwd()
+    samples <- parse.folder(directory, 'mixcr')
+    imm.shared <- shared.repertoire(.data = samples, .type = 'n0rc', .min.ppl = 1, .verbose = F)
+    fileI = paste(directory, "/immShared_Buga_CD4.csv", sep="")
+    write.csv(imm.shared, file = fileI)
+
+    file.copy(from = "immShared_Buga_CD4.csv", to = dataUpload$receptor_folder, overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
+
+    setwd(changeDir)
+
+    unlink(newDir, recursive = TRUE)
+  
   })
   
 }
