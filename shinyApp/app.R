@@ -83,6 +83,9 @@ ui <- fluidPage(
                  htmlOutput('receptorDirectory'),
 
                  tags$hr(),
+                 textInput("csvtext", label = "Name CSV", value = ".csv"),
+
+                 tags$hr(),
                  actionButton("action1", "Create CSV", class = "btn-primary")
                  
                ),
@@ -177,10 +180,10 @@ server <- function(input, output, session) {
     directory <- getwd()
     samples <- parse.folder(directory, 'mixcr')
     imm.shared <- shared.repertoire(.data = samples, .type = 'n0rc', .min.ppl = 1, .verbose = F)
-    fileI = paste(directory, "/immShared_Buga_CD4.csv", sep="")
+    fileI = input$csvtext
     write.csv(imm.shared, file = fileI)
 
-    file.copy(from = "immShared_Buga_CD4.csv", to = dataUpload$receptor_folder, overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
+    file.copy(from = input$csvtext, to = dataUpload$receptor_folder, overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
 
     setwd(changeDir)
 
