@@ -145,14 +145,6 @@ server <- function(input, output, session) {
                        choiceValues = input$file1$datapath)
   })
 
-  output$select_table <- renderTable({
-    
-    dframe <- read.csv(input$select_var)
-    
-    return(dframe)
-    
-  })
-
   #allows user to choose where to store their new csv file
   volumes <- getVolumes()
   shinyDirChoose(input, 'resultsLocation', roots=volumes, session=session)
@@ -179,9 +171,7 @@ server <- function(input, output, session) {
     print(input$file1$name)
     print(input$select_var)
 
-    print("hi")
     for (i in input$select_var) {
-      print("bye")
       string <- sub(".*/", "", i)
       finalString <- sub(".txt", "", string)
       index <- as.numeric(finalString) + 1
@@ -210,7 +200,19 @@ server <- function(input, output, session) {
     setwd(changeDir)
 
     unlink(newDir, recursive = TRUE)
-  
+
+    newEnd <- paste("/", input$csvtext, sep="")
+
+    csvFile <- paste(changeDir, newEnd, sep="")
+
+    output$select_table <- renderTable({
+    
+      dframe <- read.csv(csvFile)
+    
+      return(dframe)
+    
+    })
+
   })
   
 }
