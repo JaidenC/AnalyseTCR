@@ -8,8 +8,9 @@ ui <- fluidPage(
   
   # App title ----
   navbarPage(
-    # theme = "cerulean",  # <--- To use a theme, uncomment this
+   
     "AnalyseTCR",
+    
     tabPanel("Upload",
              
              # Sidebar layout with input and output definitions ----
@@ -82,6 +83,7 @@ ui <- fluidPage(
                  br(),
                  htmlOutput('receptorDirectory'),
 
+                 #creates field where user can choose what to name their CSV file
                  tags$hr(),
                  textInput("csvtext", label = "Name CSV", value = ".csv"),
 
@@ -142,7 +144,7 @@ server <- function(input, output, session) {
                        choiceNames = input$file1$name,
                        choiceValues = input$file1$datapath)
   })
-  
+
   output$select_table <- renderTable({
     
     dframe <- read.csv(input$select_var)
@@ -151,6 +153,7 @@ server <- function(input, output, session) {
     
   })
 
+  #allows user to choose where to store their new csv file
   volumes <- getVolumes()
   shinyDirChoose(input, 'resultsLocation', roots=volumes, session=session)
   
@@ -167,23 +170,42 @@ server <- function(input, output, session) {
   observeEvent(input$action1, {
     dir.create(file.path(dataUpload$receptor_folder, "tempFile"), recursive = FALSE)
 
-    #change working directory to the tempFile 
+    #change working directory to the tempFile made
     changeDir <- dataUpload$receptor_folder
     newDir = paste(changeDir, "/tempFile", sep="")
     makeNewDir <- newDir
     setwd(makeNewDir)
 
+    print(input$file1$name)
     print(input$select_var)
+
+    print("hi")
+    for (i in input$select_var) {
+      print("bye")
+      string <- sub(".*/", "", i)
+      finalString <- sub(".txt", "", string)
+      index <- as.numeric(finalString) + 1
+      copyFile <- file.rename(i, input$file1$name[index])
+      file.copy(from = input$copyFile, 
+                to = getwd(), 
+                overwrite = TRUE, 
+                recursive = FALSE, 
+                copy.mode = TRUE)
+    }
     
-    file.copy(from = input$select_var, to = getwd(), overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
-  
     directory <- getwd()
+
+    #runs tcR script to generate the csv file
     samples <- parse.folder(directory, 'mixcr')
     imm.shared <- shared.repertoire(.data = samples, .type = 'n0rc', .min.ppl = 1, .verbose = F)
     fileI = input$csvtext
     write.csv(imm.shared, file = fileI)
 
-    file.copy(from = input$csvtext, to = dataUpload$receptor_folder, overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
+    file.copy(from = input$csvtext, 
+              to = dataUpload$receptor_folder, 
+              overwrite = TRUE, 
+              recursive = FALSE, 
+              copy.mode = TRUE)
 
     setwd(changeDir)
 
