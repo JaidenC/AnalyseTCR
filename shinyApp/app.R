@@ -61,7 +61,7 @@ ui <- fluidPage(
                mainPanel(
                  
                  # Output: Data file ----
-                 tableOutput("contents")
+                 DT::dataTableOutput("contents")
                )
              )
     ),
@@ -96,12 +96,29 @@ ui <- fluidPage(
                mainPanel(
                  
                  # Output: Data file ----
-                 tableOutput("select_table")
+                   DT::dataTableOutput("select_table")
                  
                )
              )   
     ),
-    tabPanel("Navbar 3", "This panel is intentionally left blank")
+    
+    tabPanel("Cloneset Summary", 
+
+        "to be added"
+    
+    ),
+
+    tabPanel("Repseq Summary", 
+
+        "to be added"
+    
+    ),
+
+    tabPanel("Top Proportions", 
+
+        "to be added"
+    
+    )
   )
 )
 
@@ -114,7 +131,7 @@ server <- function(input, output, session) {
     receptor_folder = NULL
   )
   
-  output$contents <- renderTable({
+  output$contents = DT::renderDataTable({
     
     # input$file1 will be NULL initially. After the user selects
     # and uploads a file, head of that data file by default,
@@ -205,12 +222,8 @@ server <- function(input, output, session) {
 
     csvFile <- paste(changeDir, newEnd, sep="")
 
-    output$select_table <- renderTable({
-    
+    output$select_table = DT::renderDataTable({
       dframe <- read.csv(csvFile)
-    
-      return(dframe)
-    
     })
 
   })
