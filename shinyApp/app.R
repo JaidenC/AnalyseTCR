@@ -2,9 +2,14 @@ library(shiny)
 library(shinyFiles)
 library(DT)
 library(tcR)
+library(shinyjs)
+library(dplyr)
+library(ggplot2)
 
 # Define UI for data upload app ----
 ui <- fluidPage(
+
+  useShinyjs(),
   
   # App title ----
   navbarPage(
@@ -102,23 +107,18 @@ ui <- fluidPage(
              )   
     ),
     
-    tabPanel("Cloneset Summary", 
-
-        "to be added"
-    
+    tabPanel("Cloneset Summary",         
+      DT::dataTableOutput("clonesetTable")
     ),
 
     tabPanel("Repseq Summary", 
-
-        "to be added"
-    
+      DT::dataTableOutput("repseqTable")
     ),
 
     tabPanel("Top Proportions", 
-
-        "to be added"
-    
+      plotOutput("topGraph")
     )
+  
   )
 )
 
@@ -225,6 +225,18 @@ server <- function(input, output, session) {
     output$select_table = DT::renderDataTable({
       dframe <- read.csv(csvFile)
     })
+
+    output$clonesetTable <- DT::renderDataTable(
+      datatable(cloneset.stats(samples))
+    )
+
+    output$repseqTable <- DT::renderDataTable(
+      datatable(repseq.stats(samples))
+    )
+
+    output$topGraph <- renderPlot({
+      vis.top.proportions(samples)
+    }, height = 1000)
 
   })
   
