@@ -116,7 +116,7 @@ ui <- fluidPage(
     ),
 
     tabPanel("Top Proportions", 
-      selectInput("topChoose", "Choose:", 
+      selectInput("topChoose", "Choose what you want to display:", 
            c("Top Proportion Graph",
              "Top Ten Table")),
       hr(),
@@ -125,11 +125,15 @@ ui <- fluidPage(
     ),
 
     tabPanel("Gene Usage", 
-      selectInput("geneChoose", "Choose:", 
+      selectInput("geneChoose", "Choose graph to display:", 
            c("J Usage Dodge",
              "J Usage Column")),
       hr(),
       plotOutput("geneGraph")    
+    ),
+
+    tabPanel("Jensen-Shannon Divergence", 
+      plotOutput("shannonGraph")    
     )
 
   )
@@ -275,6 +279,11 @@ server <- function(input, output, session) {
 
     output$geneGraph <- renderPlot({ 
       geneInput()
+    }, height = 1000)
+
+    output$shannonGraph <- renderPlot({ 
+      imm.js <- js.div.seg(samples, HUMAN_TRBV, .verbose = F) 
+      vis.radarlike(imm.js, .ncol = 2)
     }, height = 1000)
 
   })
