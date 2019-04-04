@@ -121,7 +121,7 @@ ui <- fluidPage(
              "Top Ten Table")),
       hr(),
       plotOutput("topGraph"),
-      DT::dataTableOutput("topTable") 
+      tableOutput("topTable") 
     ),
 
     tabPanel("Gene Usage", 
@@ -247,19 +247,26 @@ server <- function(input, output, session) {
       datatable(repseq.stats(samples))
     )
 
+     topInput <- reactive({
+      switch(input$topChoose,
+          "Top Proportion Graph" = vis.top.proportions(samples),
+          "Top Ten Table" = top.proportion(samples, 10)
+          )
+    })
+
     if (input$topChoose == "Top Proportion Graph") {
       output$topGraph <- renderPlot({
-        vis.top.proportions(samples)
+        topInput()
       }, height = 1000)
     }
     
     else if (input$topChoose == "Top Ten Table") {
-      output$topTable <- DT::renderDataTable({
-        datatable(top.proportion(samples, 10))
+      output$topTable <- renderTable({
+        topInput()
       })
     }
 
-    graphInput <- reactive({
+    geneInput <- reactive({
       switch(input$geneChoose,
           "J Usage Dodge" = vis.gene.usage(samples, HUMAN_TRBJ, .main = 'twb J-usage dodge', .dodge = T),
           "J Usage Column" = vis.gene.usage(samples, HUMAN_TRBJ, .main = 'twb J-usage column', .dodge = F, .ncol = 2)
@@ -267,7 +274,7 @@ server <- function(input, output, session) {
     })
 
     output$geneGraph <- renderPlot({ 
-      graphInput()
+      geneInput()
     }, height = 1000)
 
   })
