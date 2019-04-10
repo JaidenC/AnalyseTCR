@@ -66,7 +66,7 @@ ui <- fluidPage(
                mainPanel(
                  
                  # Output: Data file ----
-                 DT::dataTableOutput("contents")
+                 DT::dataTableOutput("contents"), style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
                )
              )
     ),
@@ -101,24 +101,24 @@ ui <- fluidPage(
                mainPanel(
                  
                  # Output: Data file ----
-                   DT::dataTableOutput("select_table")
+                   DT::dataTableOutput("select_table"), style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
                  
                )
              )   
     ),
     
     tabPanel("Cloneset Summary",         
-      DT::dataTableOutput("clonesetTable")
+      DT::dataTableOutput("clonesetTable"), style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
     ),
 
     tabPanel("Repseq Summary", 
-      DT::dataTableOutput("repseqTable")
+      DT::dataTableOutput("repseqTable"), style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
     ),
 
     tabPanel("Top Proportions", 
       selectInput("topChoose", "Choose what you want to display:", 
            c("Top Proportion Graph",
-             "Top Ten Table")),
+             "Clonal Space Homeostasis")),
       hr(),
       plotOutput("topGraph"),
       tableOutput("topTable") 
@@ -126,8 +126,9 @@ ui <- fluidPage(
 
     tabPanel("Gene Usage", 
       selectInput("geneChoose", "Choose graph to display:", 
-           c("J Usage Dodge",
-             "J Usage Column")),
+           c("J Usage Graph",
+             "J Usage Column",
+             "V Usage Graph")),
       hr(),
       plotOutput("geneGraph")    
     ),
@@ -243,37 +244,39 @@ server <- function(input, output, session) {
       dframe <- read.csv(csvFile)
     })
 
+    #Cloneset summary tab
     output$clonesetTable <- DT::renderDataTable(
       datatable(cloneset.stats(samples))
     )
 
+    #Repseq summary tab
     output$repseqTable <- DT::renderDataTable(
       datatable(repseq.stats(samples))
     )
 
+    twb.space <- clonal.space.homeostasis(samples)
+
+    #Top proportion Tab
      topInput <- reactive({
       switch(input$topChoose,
           "Top Proportion Graph" = vis.top.proportions(samples),
-          "Top Ten Table" = top.proportion(samples, 10)
+          "Clonal Space Homeostasis" = vis.clonal.space(twb.space)
           )
     })
 
-    if (input$topChoose == "Top Proportion Graph") {
       output$topGraph <- renderPlot({
         topInput()
       }, height = 1000)
-    }
     
-    else if (input$topChoose == "Top Ten Table") {
-      output$topTable <- renderTable({
-        topInput()
-      })
-    }
+
+    #Gene Usage Tab
+    imm1.vs <- geneUsage(samples[[1]], HUMAN_TRBV)
 
     geneInput <- reactive({
       switch(input$geneChoose,
-          "J Usage Dodge" = vis.gene.usage(samples, HUMAN_TRBJ, .main = 'twb J-usage dodge', .dodge = T),
-          "J Usage Column" = vis.gene.usage(samples, HUMAN_TRBJ, .main = 'twb J-usage column', .dodge = F, .ncol = 2)
+          "J Usage Graph" = vis.gene.usage(samples, HUMAN_TRBJ, .main = 'twb J-usage dodge', .dodge = T),
+          "J Usage Column" = vis.gene.usage(samples, HUMAN_TRBJ, .main = 'twb J-usage column', .dodge = F, .ncol = 2),
+          "V Usage Graph" = vis.gene.usage(imm1.vs, NA, .main = 'twb[[1]] V-usage', .coord.flip = F)
           )
     })
 
@@ -281,6 +284,7 @@ server <- function(input, output, session) {
       geneInput()
     }, height = 1000)
 
+    #Jensen-Shannon graph tab
     output$shannonGraph <- renderPlot({ 
       imm.js <- js.div.seg(samples, HUMAN_TRBV, .verbose = F) 
       vis.radarlike(imm.js, .ncol = 2)
