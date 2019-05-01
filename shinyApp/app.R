@@ -116,24 +116,52 @@ ui <- fluidPage(
     ),
 
     tabPanel("Top Proportions", 
-      selectInput("topChoose", "Choose what you want to display:", 
+      fluidRow(
+        column(3,
+          selectInput("topChoose", "Choose what you want to display:", 
            c("Top Proportion Graph",
-             "Clonal Space Homeostasis")),
+             "Clonal Space Homeostasis"))
+        ),
+        column(3, offset = 1,
+          textInput("topText", label = "Name Graph", value = ".png")
+        ),
+        column(3, offset = 2,
+          downloadButton('topDownload', 'Download Graph')
+        )
+      ),
       hr(),
-      plotOutput("topGraph"),
-      tableOutput("topTable") 
+      plotOutput("topGraph")
     ),
 
     tabPanel("Gene Usage", 
-      selectInput("geneChoose", "Choose graph to display:", 
-           c("J Usage Graph",
-             "J Usage Column",
-             "V Usage Graph")),
+      fluidRow(
+        column(3,
+          selectInput("geneChoose", "Choose graph to display:", 
+               c("J Usage Graph",
+                 "J Usage Column",
+                 "V Usage Graph"))
+        ),
+        column(3, offset = 1,
+          textInput("geneText", label = "Name Graph", value = ".png")
+        ),
+        column(3, offset = 2,
+          downloadButton('geneDownload', 'Download Graph')
+        )
+      ),
       hr(),
       plotOutput("geneGraph")    
     ),
 
     tabPanel("Jensen-Shannon Divergence", 
+      fluidRow(
+        column(3,
+          textInput("shannonText", label = "Name Graph", value = ".png")
+        ),
+        column(3, offset = 1,
+          downloadButton('shannonDownload', 'Download Graph')
+        )
+      ),  
+      hr(),
       plotOutput("shannonGraph")    
     )
 
@@ -267,8 +295,14 @@ server <- function(input, output, session) {
       output$topGraph <- renderPlot({
         topInput()
       }, height = 1000)
-    
 
+      output$topDownload <- downloadHandler(
+      filename = input$topText,
+      content = function(file) {
+        ggsave(input$topText, plot = topInput(), device = "png")
+      }
+    )
+    
     #Gene Usage Tab
     imm1.vs <- geneUsage(samples[[1]], HUMAN_TRBV)
 
@@ -280,15 +314,33 @@ server <- function(input, output, session) {
           )
     })
 
+    output$geneDownload <- downloadHandler(
+      filename = input$geneText,
+      content = function(file) {
+        ggsave(input$geneText, plot = geneInput(), device = "png")
+      }
+    )
+
     output$geneGraph <- renderPlot({ 
       geneInput()
     }, height = 1000)
 
     #Jensen-Shannon graph tab
-    output$shannonGraph <- renderPlot({ 
+    shannonInput <- reactive({
       imm.js <- js.div.seg(samples, HUMAN_TRBV, .verbose = F) 
       vis.radarlike(imm.js, .ncol = 2)
+    })
+
+    output$shannonGraph <- renderPlot({ 
+      shannonInput()
     }, height = 1000)
+
+    output$shannonDownload <- downloadHandler(
+      filename = input$shannonText,
+      content = function(file) {
+        ggsave(input$shannonText, plot = shannonInput(), device = "png")
+      }
+    )
 
   })
   
