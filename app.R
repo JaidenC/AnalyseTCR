@@ -15,98 +15,78 @@ ui <- fluidPage(
   # App title ----
   navbarPage(
    
-    "AnalyseTCR",
+    "COEVE",
     
     tabPanel("Upload",
              
-             # Sidebar layout with input and output definitions ----
-             sidebarLayout(
-               
-               # Sidebar panel for inputs ----
-               sidebarPanel(
+         fluidRow(        
+          column(8, align="center", offset = 2,
+          # Input: Select a file ----
+          fileInput("file1", "Choose Mixcr File",
+          multiple = TRUE,
+          accept = c("text/csv",
+                      "text/comma-separated-values,text/plain",
+                      ".csv")),
                  
-                 # Input: Select a file ----
-                 fileInput("file1", "Choose Mixcr File",
-                           multiple = TRUE,
-                           accept = c("text/csv",
-                                      "text/comma-separated-values,text/plain",
-                                      ".csv")),
+          # Horizontal line ----
+          tags$hr(),
                  
-                 # Horizontal line ----
-                 tags$hr(),
+          # Input: Checkbox if file has header ----
+          checkboxInput("header", "Header", TRUE),
                  
-                 # Input: Checkbox if file has header ----
-                 checkboxInput("header", "Header", TRUE),
+          # Input: Select separator ----
+          radioButtons("sep", "Separator",
+          choices = c(Comma = ",",
+                      Semicolon = ";",
+                      Tab = "\t"),
+          selected = "\t"),
                  
-                 # Input: Select separator ----
-                 radioButtons("sep", "Separator",
-                              choices = c(Comma = ",",
-                                          Semicolon = ";",
-                                          Tab = "\t"),
-                              selected = "\t"),
+          # Input: Select quotes ----
+          radioButtons("quote", "Quote",
+          choices = c(None = "",
+                      "Double Quote" = '"',
+                      "Single Quote" = "'"),
+          selected = ""),
                  
-                 # Input: Select quotes ----
-                 radioButtons("quote", "Quote",
-                              choices = c(None = "",
-                                          "Double Quote" = '"',
-                                          "Single Quote" = "'"),
-                              selected = ""),
-                 
-                 # Horizontal line ----
-                 tags$hr(),
-                 
-                 # Input: Select number of rows to display ----
-                 radioButtons("disp", "Display",
-                              choices = c(Head = "head",
-                                          All = "all"),
-                              selected = "head")
-                 
-               ),
-               
-               # Main panel for displaying outputs ----
-               mainPanel(
-                 
-                 # Output: Data file ----
-                 DT::dataTableOutput("contents"), style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
-               )
-             )
+          # Horizontal line ----
+          tags$hr(),
+                
+          # Input: Select number of rows to display ----
+          radioButtons("disp", "Display",
+          choices = c(Head = "head",
+          All = "all"),
+          selected = "head")
+        )
+      )  
     ),
+
+    tabPanel("Choose Files",
+       fluidRow(        
+          column(8, align="center", offset = 2,         
+ 
+          # Select variables to display ----
+          uiOutput("checkbox"), 
+                 
+          tags$hr(),
+          div(HTML("<b>Choose Output Directory:</b>"), style = "margin-bottom: 5px;"),
+          shinyDirButton('resultsLocation', 'Browse...', title = 'Select a directory'),
+          br(),
+          htmlOutput('receptorDirectory'),
+
+          #creates field where user can choose what to name their CSV file
+          tags$hr(),
+          textInput("csvtext", label = "Name CSV", value = ".csv"),
+
+          tags$hr(),
+          actionButton("action1", "Create CSV", class = "btn-primary")         
+          )
+        )
+      ),
     
     navbarMenu("TCR Package",
+      
       tabPanel("Shared Clonotype Table",
-               
-               # Sidebar layout with input and output definitions ----
-               sidebarLayout(
-                 
-                 # Sidebar panel for inputs ----
-                 sidebarPanel(
-                   
-                   # Select variables to display ----
-                   uiOutput("checkbox"), 
-                 
-                   tags$hr(),
-                   div(HTML("<b>Choose Output Directory:</b>"), style = "margin-bottom: 5px;"),
-                   shinyDirButton('resultsLocation', 'Browse...', title = 'Select a directory'),
-                   br(),
-                   htmlOutput('receptorDirectory'),
-
-                   #creates field where user can choose what to name their CSV file
-                   tags$hr(),
-                   textInput("csvtext", label = "Name CSV", value = ".csv"),
-
-                   tags$hr(),
-                   actionButton("action1", "Create CSV", class = "btn-primary")
-                   
-                 ),
-                 
-                 # Main panel for displaying outputs ----
-                 mainPanel(
-                   
-                   # Output: Data file ----
-                     DT::dataTableOutput("select_table"), style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
-                   
-                 )
-               )   
+        DT::dataTableOutput("select_table"), style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
       ),
       
       tabPanel("Cloneset Summary",         
@@ -172,7 +152,7 @@ ui <- fluidPage(
           column(3,
             selectInput("overChoose", "Choose graph to display:", 
                  c("Heatmap",
-                   "Repoverlap"))
+                   "Top Cross"))
           ),
           column(3, offset = 1,
             textInput("overText", label = "Name Graph", value = ".png")
@@ -183,6 +163,70 @@ ui <- fluidPage(
         ),
         hr(),
         plotOutput("overGraph")    
+      )
+    ),
+    
+    navbarMenu("Immunarch",
+      
+      tabPanel("Repertoire Overlap", 
+        fluidRow(
+          column(3,
+            selectInput("immuheatChoose", "Choose graph to display:", 
+                 c("Repertoire Overlap Heatmap",
+                   "Repertoire Analysis"))
+          ),
+          column(3, offset = 1,
+            textInput("immuheatText", label = "Name Graph", value = ".png")
+          ),
+          column(3, offset = 2,
+            downloadButton('immuheatDownload', 'Download Graph')
+          )
+        ),
+        hr(),
+        plotOutput("immuheatGraph")    
+      ),
+
+        tabPanel("Gene Usage Analysis", 
+        fluidRow(
+          column(3,
+            selectInput("immugeneChoose", "Choose graph to display:", 
+                 c("Gene Usage Histogram",
+                   "Gene Usage Boxplot",
+                   "Gene Usage Tree",
+                   "Gene Usage Jensen-Shannon",
+                   "Gene Usage Correlation",
+                   "Spectratyping"))
+          ),
+          column(3, offset = 1,
+            textInput("immugeneText", label = "Name Graph", value = ".png")
+          ),
+          column(3, offset = 2,
+            downloadButton('immugeneDownload', 'Download Graph')
+          )
+        ),
+        hr(),
+        plotOutput("immugeneGraph")    
+      ),
+
+        tabPanel("Diversity Estimation", 
+        fluidRow(
+          column(3,
+            selectInput("immudivChoose", "Choose graph to display:", 
+                 c("Chao1 Estimator",
+                   "Hill Numbers",
+                   "True Diversity",
+                   "D50 Diversity Index",
+                   "Rarefaction Analysis"))
+          ),
+          column(3, offset = 1,
+            textInput("immudivText", label = "Name Graph", value = ".png")
+          ),
+          column(3, offset = 2,
+            downloadButton('immudivDownload', 'Download Graph')
+          )
+        ),
+        hr(),
+        plotOutput("immudivGraph")    
       )
     )
   )
@@ -364,11 +408,13 @@ server <- function(input, output, session) {
         ggsave(input$shannonText, plot = shannonInput(), device = "png")
       }
     )
+
+    twb.top <- top.cross(.data = samples, .n = seq(500, 10000, 500), .verbose = F, .norm = T)    
     
     overInput <- reactive({
       switch(input$overChoose,
           "Heatmap" = vis.heatmap(tcR::repOverlap(samples, 'exact', 'aa', .vgene = T, .verbose = F), .title = 'twb - (ave)-intersection', .labs = ''),
-          "Repoverlap" = vis(immunarch::repOverlap(immdata))
+          "Top Cross" = top.cross.plot(twb.top)
 
           )
     })
@@ -384,8 +430,90 @@ server <- function(input, output, session) {
       overInput()
     }, height = 1000)
 
+    imm_ov1 = immunarch::repOverlap(immdata, .method = "public", .verbose = F)
+
+    immuheatInput <- reactive({
+      switch(input$immuheatChoose,
+          "Repertoire Overlap Heatmap" = vis(immunarch::repOverlap(immdata)),
+          "Repertoire Analysis" = vis(repOverlapAnalysis(imm_ov1, "mds"))
+          )
+    })
+
+    output$immuheatDownload <- downloadHandler(
+      filename = input$immuheatText,
+      content = function(file) {
+        ggsave(input$immuheatText, plot = immuheatInput(), device = "png")
+      }
+    )
+
+    output$immuheatGraph <- renderPlot({ 
+      immuheatInput()
+    }, height = 1000)
+
+    imm_gu = immunarch::geneUsage(immdata, "hs.trbv", .norm = T, .ambig = "exc")
+    imm_gu_js = geneUsageAnalysis(imm_gu, .method = "js", .verbose = F)
+    imm_gu_cor = geneUsageAnalysis(imm_gu, .method = "cor", .verbose = F)
+    p1 = vis(immunarch::spectratype(immdata[[1]], .quant = "id", .col = "aa", .gene = "v"))
+    p2 = vis(immunarch::spectratype(immdata[[1]], .quant = "count", .col = "aa", .gene = "v"))
+   
+    immugeneInput <- reactive({
+      switch(input$immugeneChoose,
+          "Gene Usage Histogram" = vis(imm_gu, .plot = "hist", .grid = T),
+          "Gene Usage Boxplot" = vis(imm_gu, .by = "Status", .meta = immdata$meta, .plot = "box"),
+          "Gene Usage Tree" = vis(imm_gu, .plot = "tree"),
+          "Gene Usage Jensen-Shannon" = vis(imm_gu_js, .title = "Gene usage JS-divergence", .leg.title = "JS", .text.size=1.5),
+          "Gene Usage Correlation" = vis(imm_gu_cor, .title = "Gene usage correlation", .leg.title = "Cor", .text.size=1.5),
+          "Spectratyping" = grid.arrange(p1, p2, ncol = 2)
+          )
+    })
+
+    output$immugeneDownload <- downloadHandler(
+      filename = input$immugeneText,
+      content = function(file) {
+        ggsave(input$immugeneText, plot = immugeneInput(), device = "png")
+      }
+    )
+
+    output$immugeneGraph <- renderPlot({ 
+      immugeneInput()
+    }, height = 1000)
+
+    # Chao1 diversity measure
+    div_chao = repDiversity(immdata, "chao1")
+
+    # Hill numbers
+    div_hill = repDiversity(immdata, "hill")
+
+    # D50
+    div_d50 = repDiversity(immdata, "d50")
+
+    # Ecological diversity measure
+    div_div = repDiversity(immdata, "div")
+
+    imm_raref = repDiversity(immdata, "raref", .verbose = F)
+
+    immudivInput <- reactive({
+      switch(input$immudivChoose,
+          "Chao1 Estimator" = vis(div_chao),
+          "Hill Numbers" = vis(div_hill, .by=c("Status", "Sex"), .meta=immdata$meta),
+          "True Diversity" = vis(div_div),
+          "D50 Diversity Index" = vis(div_d50),
+          "Rarefaction Analysis" = grid.arrange(vis(imm_raref), vis(imm_raref, .by="Status", .meta=immdata$meta), ncol=2)
+          )
+    })
+
+    output$immudivDownload <- downloadHandler(
+      filename = input$immudivText,
+      content = function(file) {
+        ggsave(input$immudivText, plot = immudivInput(), device = "png")
+      }
+    )
+
+    output$immudivGraph <- renderPlot({ 
+      immudivInput()
+    }, height = 1000)
+
   })
-  
 }
 
 # Create Shiny app ----
