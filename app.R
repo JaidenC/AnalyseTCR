@@ -168,12 +168,35 @@ ui <- fluidPage(
     
     navbarMenu("Immunarch",
       
+      tabPanel("Basic Analysis and Clonality", 
+        fluidRow(
+          column(3,
+            selectInput("immubasicChoose", "Choose graph to display:", 
+                 c( "Number of Clonotypes",
+                    "Distribution of CDR3 Length",
+                    "Distribution of Clonotype Abundances",
+                    "Top Clonal Proportion",
+                    "Tail Clonal Proportion",
+                    "Relative Abundance"))
+          ),
+          column(3, offset = 1,
+            textInput("immubasicText", label = "Name Graph", value = ".png")
+          ),
+          column(3, offset = 2,
+            downloadButton('immubasicDownload', 'Download Graph')
+          )
+        ),
+        hr(),
+        plotOutput("immubasicGraph")    
+      ),
+
       tabPanel("Repertoire Overlap", 
         fluidRow(
           column(3,
             selectInput("immuheatChoose", "Choose graph to display:", 
                  c("Repertoire Overlap Heatmap",
-                   "Repertoire Analysis"))
+                   "Repertoire Analysis",
+                   "K-means Cluster Analysis"))
           ),
           column(3, offset = 1,
             textInput("immuheatText", label = "Name Graph", value = ".png")
@@ -190,11 +213,14 @@ ui <- fluidPage(
         fluidRow(
           column(3,
             selectInput("immugeneChoose", "Choose graph to display:", 
-                 c("Gene Usage Histogram",
+                 c("Gene Usage Comparison",
+                   "Gene Usage Histogram",
                    "Gene Usage Boxplot",
                    "Gene Usage Tree",
                    "Gene Usage Jensen-Shannon",
                    "Gene Usage Correlation",
+                   "Hierarchial Cluster Analysis",
+                   "K-means Cluster Analysis",
                    "Spectratyping"))
           ),
           column(3, offset = 1,
@@ -285,6 +311,8 @@ server <- function(input, output, session) {
       helpText(HTML(paste0("<b>Selected directory:</b> ", dataUpload$receptor_folder)))
     }
   })
+  
+  metadata <- repLoad("/Users/jaidenchoy/Documents/Thesis/metadata.txt")
   
   observeEvent(input$action1, {
     dir.create(file.path(dataUpload$receptor_folder, "tempFile"), recursive = FALSE)
@@ -430,13 +458,45 @@ server <- function(input, output, session) {
       overInput()
     }, height = 1000)
 
+    exp_vol = repExplore(immdata, .method = "volume")
+    exp_len = repExplore(immdata, .method = "len", .col = "aa")
+    exp_cnt = repExplore(immdata, .method = "count")
+    imm_top = repClonality(immdata, .method = "top", .head = c(10, 100, 1000, 3000, 10000))
+    imm_tail = repClonality(immdata, .method = "tail")
+    imm_hom = repClonality(immdata, .method = "homeo", 
+                       .clone.types = c(Small = .0001, Medium = .001, Large = .01, Hyperexpanded = 1))
+
+    immubasicInput <- reactive({
+      switch(input$immubasicChoose,
+          "Number of Clonotypes" = vis(exp_vol, .by = c("Status"), .meta = metadata$meta),
+          "Distribution of CDR3 Length" = vis(exp_len),
+          "Distribution of Clonotype Abundances" = vis(exp_cnt),
+          "Top Clonal Proportion" = grid.arrange(vis(imm_top), vis(imm_top, .by="Status", .meta=metadata$meta), ncol = 2),
+          "Tail Clonal Proportion" = grid.arrange(vis(imm_tail), vis(imm_tail, .by="Status", .meta=metadata$meta), ncol = 2),
+          "Relative Abundance" = grid.arrange(vis(imm_hom), vis(imm_hom, .by=c("Status", "Sample"), .meta=metadata$meta), ncol = 2)
+          ) 
+    })
+
+    output$immubasicDownload <- downloadHandler(
+      filename = input$immubasicText,
+      content = function(file) {
+        ggsave(input$immubasicText, plot = immuheatInput(), device = "png")
+      }
+    )
+
+    output$immubasicGraph <- renderPlot({ 
+      immubasicInput()
+    }, height = 1000)
+
     imm_ov1 = immunarch::repOverlap(immdata, .method = "public", .verbose = F)
+    imm_ov2 = repOverlap(immdata, .method = "morisita", .verbose = F)
 
     immuheatInput <- reactive({
       switch(input$immuheatChoose,
-          "Repertoire Overlap Heatmap" = vis(immunarch::repOverlap(immdata)),
-          "Repertoire Analysis" = vis(repOverlapAnalysis(imm_ov1, "mds"))
-          )
+          "Repertoire Overlap Heatmap" = grid.arrange(vis(imm_ov1), vis(imm_ov2), ncol = 2),
+          "Repertoire Analysis" = vis(repOverlapAnalysis(imm_ov1, "mds")),
+          "K-means Cluster Analysis" = vis(repOverlapAnalysis(imm_ov1, "mds+kmeans"))
+          ) 
     })
 
     output$immuheatDownload <- downloadHandler(
@@ -452,17 +512,25 @@ server <- function(input, output, session) {
 
     imm_gu = immunarch::geneUsage(immdata, "hs.trbv", .norm = T, .ambig = "exc")
     imm_gu_js = geneUsageAnalysis(imm_gu, .method = "js", .verbose = F)
+    imm_gu_js[is.na(imm_gu_js)] = 0
     imm_gu_cor = geneUsageAnalysis(imm_gu, .method = "cor", .verbose = F)
+    imm_cl_pca = geneUsageAnalysis(imm_gu, "js+pca+kmeans", .verbose = F)
+    imm_cl_mds = geneUsageAnalysis(imm_gu, "js+mds+kmeans", .verbose = F)
+    imm_cl_tsne = geneUsageAnalysis(imm_gu, "js+tsne+kmeans", .perp = .01, .verbose = F)
     p1 = vis(immunarch::spectratype(immdata[[1]], .quant = "id", .col = "aa", .gene = "v"))
     p2 = vis(immunarch::spectratype(immdata[[1]], .quant = "count", .col = "aa", .gene = "v"))
    
     immugeneInput <- reactive({
       switch(input$immugeneChoose,
-          "Gene Usage Histogram" = vis(imm_gu, .plot = "hist", .grid = T),
-          "Gene Usage Boxplot" = vis(imm_gu, .by = "Status", .meta = immdata$meta, .plot = "box"),
+          "Gene Usage Comparison" = vis(imm_gu, .plot = "hist", .grid = T),
+          "Gene Usage Histogram" = vis(imm_gu, .plot = "hist", .grid = F, .by = "Status", .meta = metadata$meta),
+          "Gene Usage Boxplot" = vis(imm_gu, .by = "Status", .meta = metadata$meta, .plot = "box"),
           "Gene Usage Tree" = vis(imm_gu, .plot = "tree"),
-          "Gene Usage Jensen-Shannon" = vis(imm_gu_js, .title = "Gene usage JS-divergence", .leg.title = "JS", .text.size=1.5),
-          "Gene Usage Correlation" = vis(imm_gu_cor, .title = "Gene usage correlation", .leg.title = "Cor", .text.size=1.5),
+          "Gene Usage Jensen-Shannon" = vis(imm_gu_js, .title = "Gene usage JS-divergence", .leg.title = "JS"),
+          "Gene Usage Correlation" = vis(imm_gu_cor, .title = "Gene usage correlation", .leg.title = "Cor"),
+          "Hierarchial Cluster Analysis" = vis(geneUsageAnalysis(imm_gu, "cosine+hclust", .verbose = F)),
+          "K-means Cluster Analysis" = grid.arrange(vis(imm_cl_pca, .plot = "clust"), vis(imm_cl_mds, .plot = "clust"), vis(imm_cl_tsne, .plot = "clust"), 
+                                       ncol = 3),
           "Spectratyping" = grid.arrange(p1, p2, ncol = 2)
           )
     })
@@ -480,12 +548,17 @@ server <- function(input, output, session) {
 
     # Chao1 diversity measure
     div_chao = repDiversity(immdata, "chao1")
+    p3 = vis(div_chao)
+    p4 = vis(div_chao, .by=c("Status", "Sample"), .meta=metadata$meta)
+
 
     # Hill numbers
     div_hill = repDiversity(immdata, "hill")
 
     # D50
     div_d50 = repDiversity(immdata, "d50")
+    p5 = vis(div_d50)
+    p6 = vis(div_d50, .by="Status", .meta=metadata$meta)
 
     # Ecological diversity measure
     div_div = repDiversity(immdata, "div")
@@ -494,11 +567,11 @@ server <- function(input, output, session) {
 
     immudivInput <- reactive({
       switch(input$immudivChoose,
-          "Chao1 Estimator" = vis(div_chao),
-          "Hill Numbers" = vis(div_hill, .by=c("Status", "Sex"), .meta=immdata$meta),
+          "Chao1 Estimator" = gridExtra::grid.arrange(p3, p4, ncol = 2),
+          "Hill Numbers" = vis(div_hill, .by=c("Status", "Sample"), .meta=metadata$meta),
           "True Diversity" = vis(div_div),
-          "D50 Diversity Index" = vis(div_d50),
-          "Rarefaction Analysis" = grid.arrange(vis(imm_raref), vis(imm_raref, .by="Status", .meta=immdata$meta), ncol=2)
+          "D50 Diversity Index" = gridExtra::grid.arrange(p5, p6, ncol = 2),
+          "Rarefaction Analysis" = grid.arrange(vis(imm_raref), vis(imm_raref, .by="Status", .meta=metadata$meta), ncol=2)
           )
     })
 
