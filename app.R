@@ -62,9 +62,15 @@ ui <- fluidPage(
 
     tabPanel("Choose Files",
        fluidRow(        
-          column(8, align="center", offset = 2,         
+          column(8, align="center", offset = 2, 
+
+          div(HTML("<b>Choose Directory Containing Metadata:</b>"), style = "margin-bottom: 5px;"),
+          shinyDirButton('metaLocation', 'Browse...', title = 'Select a directory'),
+          br(),
+          htmlOutput('metaDirectory'),        
  
           # Select variables to display ----
+          tags$hr(),
           uiOutput("checkbox"), 
                  
           tags$hr(),
@@ -311,10 +317,21 @@ server <- function(input, output, session) {
       helpText(HTML(paste0("<b>Selected directory:</b> ", dataUpload$receptor_folder)))
     }
   })
+
+  shinyDirChoose(input, 'metaLocation', roots=volumes, session=session)
   
-  metadata <- repLoad("/Users/jaidenchoy/Documents/Thesis/metadata.txt")
+  observeEvent(input$metaLocation, {
+    dataUpload$meta_folder = toString(parseDirPath(volumes, input$metaLocation))
+  })
+  
+  output$metaDirectory <- renderUI({
+    if (dataUpload$meta_folder != '' && ! is.null(dataUpload$meta_folder)) {
+      helpText(HTML(paste0("<b>Selected directory:</b> ", dataUpload$meta_folder)))
+    }
+  })
   
   observeEvent(input$action1, {
+    metadata <- repLoad(paste(dataUpload$meta_folder, "/metadata.txt", sep=""))
     dir.create(file.path(dataUpload$receptor_folder, "tempFile"), recursive = FALSE)
 
     #change working directory to the tempFile made
